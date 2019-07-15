@@ -52,7 +52,7 @@
         group: node_exporter
     - name: Add systemd
       copy:
-        src: "/root/node_exporter.service"
+        src: "node_exporter.service"
         dest: "/etc/systemd/system/node_exporter.service"
         mode: 0755
         owner: root
