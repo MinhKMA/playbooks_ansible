@@ -1,0 +1,70 @@
+---
+- name: zabbix_agent
+  hosts: "client"
+  tasks:
+    - name: add repo zabbix agent 4
+      yum:
+        name: https://repo.zabbix.com/zabbix/4.0/rhel/7/x86_64/zabbix-release-4.0-1.el7.noarch.rpm
+        state: present
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - name: install zabbix 
+      yum:
+        name: zabbix-agent
+        state: present
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'  
+    - name: backup conf
+      shell: "cp /etc/zabbix/zabbix_agentd.conf /etc/zabbix/zabbix_agentd.conf.bk"
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - lineinfile:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '^LogFileSize=0'
+        line: 'LogFileSize=256'
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - lineinfile:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '^# EnableRemoteCommands=0'
+        line: 'EnableRemoteCommands=1'
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - lineinfile:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '^Server=127.0.0.1'
+        line: 'Server={{ zabbix_server }}'
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - lineinfile:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '^ServerActive=127.0.0.1'
+        line: 'ServerActive={{ zabbix_server }}'
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - lineinfile:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '^Hostname=Zabbix server'
+        line: 'Hostname={{ ansible_hostname }}'
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - lineinfile:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '^# Timeout=3'
+        line: 'Timeout=3'
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - name: Starting the Zabbix Agent
+      service: name=zabbix-agent state=started enabled=yes
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - name: check status firewalld 
+      shell: "firewall-cmd --state"
+      register: status
+      failed_when:
+        - status.rc != 0 
+        - status.rc != 252
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - name: Firewalld setting 
+      firewalld:
+        port: 10050/tcp
+        immediate: yes
+        permanent: true
+        state: enabled
+      when: status.stdout == 'running' and ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+
+
+################################## RUN #############################################
+####################################################################################
+# ansible-playbook zabbix_agent.yml --extra-vars '{"zabbix_server":"10.10.10.10"}' #
+####################################################################################
