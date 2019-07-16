@@ -71,4 +71,4 @@
         state: enabled
       when: status.stdout == 'running' and ansible_distribution == "CentOS" and ansible_distribution_version == '7'
 
-# ansible-playbook influxdb.yml --extra-vars '{"influxdb_ip":"192.168.80.243","username":"minhkma","password":"minhkma","database","prometheus"}'
+# ansible-playbook influxdb.yml --extra-vars '{"influxdb_ip":"192.168.80.243","username":"minhkma","password":"minhkma","database":"prometheus"}'
