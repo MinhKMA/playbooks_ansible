@@ -1,0 +1,74 @@
+---
+- name: influxdb
+  hosts: "client"
+  tasks:
+    - name: ensure a list of packages installed
+      yum:
+        name: "{{ packages }}"
+      vars:
+        packages:
+        - python2-pip
+        - gcc
+        - openssl-devel
+        - bzip2-devel
+        - python-devel
+    - name: install module 
+      pip:
+        name: 
+          - requests
+          - influxdb
+    - name: add repo influxdb
+      yum_repository:
+        name: influxdb
+        description: Influxdb upstream yum repo
+        baseurl: "https://repos.influxdata.com/rhel/$releasever/$basearch/stable"
+        gpgcheck: yes
+        enabled: yes
+        gpgkey: "https://repos.influxdata.com/influxdb.key"
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - name: install influxdb 
+      yum:
+        name: influxdb
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - name: start influxdb 
+      service: name=influxdb state=started enabled=yes
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - name: create user
+      influxdb_user:
+        hostname: "{{ influxdb_ip }}"
+        user_name: "{{username}}"
+        user_password: "{{password}}""
+        admin: yes
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - name: Create database
+      influxdb_database:
+        hostname: "{{ influxdb_ip }}"
+        database_name: "prometheus"
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - name: enable authen http 
+      ini_file:
+        path: /etc/influxdb/influxdb.conf
+        section: http
+        option: auth-enabled
+        value: "true"
+        backup: yes
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - name: restart influxdb
+      service: name=influxdb state=restarted enabled=yes
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - name: check status firewalld 
+      shell: "firewall-cmd --state"
+      register: status
+      failed_when:
+        - status.rc != 0 
+        - status.rc != 252
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - name: Firewalld setting 
+      firewalld:
+        port: 8086/tcp
+        immediate: yes
+        permanent: true
+        state: enabled
+      when: status.stdout == 'running' and ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+
+# ansible-playbook influxdb.yml --extra-vars '{"influxdb_ip":"192.168.80.243","username":"minhkma","password":"minhkma"}'
