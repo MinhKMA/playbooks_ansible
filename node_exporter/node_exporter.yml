@@ -29,23 +29,23 @@
       until: _download_binary is succeeded
       retries: 5
       delay: 2
-      delegate_to: localhost
       check_mode: false
     - name: Unpack node_exporter binary
       become: false
       unarchive:
         src: "/root/node_exporter-0.18.1.linux-amd64.tar.gz"
         dest: "/root"
-      delegate_to: localhost
+        remote_src: yes
       check_mode: false
     - name: Create /usr/local/bin
       file:
         path: /usr/local/bin
         state: directory
         mode: 0755
+    - name: copy node_exporter
+      shell: "cp /root/node_exporter-0.18.1.linux-amd64/node_exporter /usr/local/bin/"
     - name: Propagate node_exporter binaries
-      copy:
-        src: "/root/node_exporter-0.18.1.linux-amd64/node_exporter"
+      file:
         dest: "/usr/local/bin/node_exporter"
         mode: 0755
         owner: node_exporter

@@ -1,0 +1,42 @@
+[
+    {
+        "labels": {
+            "job": "node"
+        },
+        "targets": [
+            "localhost:9100"
+        ]
+    },
+    {
+        "targets": [
+            "192.168.70.94:9100"
+        ],
+        "labels": {
+            "job": "node"
+        }
+    },
+    {
+        "targets": [
+            "192.168.70.80:9100"
+        ],
+        "labels": {
+            "job": "node"
+        }
+    },
+    {
+        "targets": [
+            "192.168.70.82:9100"
+        ],
+        "labels": {
+            "job": "node"
+        }
+    },
+    {
+        "targets": [
+            "192.168.70.81:9100"
+        ],
+        "labels": {
+            "job": "node"
+        }
+    }
+]

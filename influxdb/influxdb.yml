@@ -2,6 +2,20 @@
 - name: influxdb
   hosts: "client"
   tasks:
+    - name: check status firewalld 
+      shell: "firewall-cmd --state"
+      register: status
+      failed_when:
+        - status.rc != 0 
+        - status.rc != 252
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+    - name: Firewalld setting 
+      firewalld:
+        port: 8086/tcp
+        immediate: yes
+        permanent: true
+        state: enabled
+      when: status.stdout == 'running' and ansible_distribution == "CentOS" and ansible_distribution_version == '7'
     - name: ensure a list of packages installed
       yum:
         name: "{{ packages }}"
@@ -35,10 +49,10 @@
       when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
     - name: create user
       influxdb_user:
-        hostname: "{{ influxdb_ip }}"
-        user_name: "{{username}}"
-        user_password: "{{password}}""
         admin: yes
+        hostname: "{{ influxdb_ip }}"
+        user_name: "{{ username }}"
+        user_password: "{{ password }}"
       when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
     - name: Create database
       influxdb_database:
@@ -56,19 +70,5 @@
     - name: restart influxdb
       service: name=influxdb state=restarted enabled=yes
       when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
-    - name: check status firewalld 
-      shell: "firewall-cmd --state"
-      register: status
-      failed_when:
-        - status.rc != 0 
-        - status.rc != 252
-      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
-    - name: Firewalld setting 
-      firewalld:
-        port: 8086/tcp
-        immediate: yes
-        permanent: true
-        state: enabled
-      when: status.stdout == 'running' and ansible_distribution == "CentOS" and ansible_distribution_version == '7'
-
-# ansible-playbook influxdb.yml --extra-vars '{"influxdb_ip":"192.168.80.243","username":"minhkma","password":"minhkma","database":"prometheus"}'
+      
+# ansible-playbook influxdb.yml --extra-vars '{"influxdb_ip":"192.168.80.243","username":"prometheus","password":"prometheus","database":"prometheus"}'

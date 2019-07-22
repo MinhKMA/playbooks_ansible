@@ -1,0 +1,135 @@
+---
+- name: prometheus
+  hosts: "client"
+  tasks:
+    - name: Disable SELinux
+      selinux:
+        state: disabled
+    - name: Create the prometheus group
+      group:
+        name: prometheus
+        state: present
+        system: true
+    - name: Create user 
+      user:
+        name: prometheus
+        groups: prometheus
+        append: true
+        shell: /usr/sbin/nologin
+        system: true
+        createhome: false
+        home: /    
+    - name: Download prometheus binary to local folder
+      become: false
+      get_url:
+        url: "https://github.com/prometheus/prometheus/releases/download/v2.10.0/prometheus-2.10.0.linux-amd64.tar.gz"
+        dest: "/root/prometheus-2.10.0.linux-amd64.tar.gz"
+      register: _download_binary
+      until: _download_binary is succeeded
+      retries: 5
+      delay: 2
+      check_mode: false
+    - name: Unpack prometheus binary
+      become: false
+      unarchive:
+        src: "/root/prometheus-2.10.0.linux-amd64.tar.gz"
+        dest: "/root"
+        remote_src: yes
+      check_mode: false
+    - name: Create /etc/prometheus
+      file:
+        path: /etc/prometheus
+        state: directory
+        mode: 0755
+        owner: prometheus
+        group: prometheus
+    - name: Create /var/lib/prometheus
+      file:
+        path: /var/lib/prometheus
+        state: directory
+        mode: 0755
+        owner: prometheus
+        group: prometheus
+    - name: copy
+      shell: "cp /root/prometheus-2.10.0.linux-amd64/prometheus /usr/local/bin/ && cp /root/prometheus-2.10.0.linux-amd64/promtool /usr/local/bin/"
+    - name: Propagate prometheus binaries
+      file:
+        dest: "/usr/local/bin/prometheus"
+        mode: 0755
+        owner: prometheus
+        group: prometheus
+    - name: Propagate promtool binaries
+      file:
+        dest: "/usr/local/bin/promtool"
+        mode: 0755
+        owner: prometheus
+        group: prometheus
+    - name: copy
+      shell: "cp -r /root/prometheus-2.10.0.linux-amd64/consoles /etc/prometheus && cp -r /root/prometheus-2.10.0.linux-amd64/console_libraries /etc/prometheus"
+    - name: chown consoles
+      file:
+        dest: "/etc/prometheus/consoles"
+        mode: 0755
+        owner: prometheus
+        group: prometheus
+    - name: chown consoles
+      file:
+        dest: "/etc/prometheus/console_libraries"
+        mode: 0755
+        owner: prometheus
+        group: prometheus
+    - name: Add systemd
+      copy:
+        src: "prometheus.service"
+        dest: "/etc/systemd/system/prometheus.service"
+        mode: 0755
+        owner: root
+        group: root
+    - name: Add config
+      copy:
+        src: "prometheus.yml"
+        dest: "/etc/prometheus/prometheus.yml"
+        mode: 0755
+        owner: root
+        group: root
+    - name: Add target
+      copy:
+        src: "targets.json"
+        dest: "/etc/prometheus/targets.json"
+        mode: 0755
+        owner: root
+        group: root
+    - name: restart prometheus
+      become: true
+      systemd:
+        daemon_reload: true
+        name: prometheus
+        state: restarted
+        enabled: yes
+    - name: check status firewalld 
+      shell: "firewall-cmd --state"
+      register: status
+      failed_when:
+        - status.rc != 0 
+        - status.rc != 252
+    - name: Firewalld setting 
+      firewalld:
+        port: 9090/tcp
+        immediate: yes
+        permanent: true
+        state: enabled
+      when: status.stdout == 'running'
+    - name: Firewalld setting 9100
+      firewalld:
+        port: 9100/tcp
+        immediate: yes
+        permanent: true
+        state: enabled
+      when: status.stdout == 'running'
+    - name: Firewalld setting 9201
+      firewalld:
+        port: 9201/tcp
+        immediate: yes
+        permanent: true
+        state: enabled
+      when: status.stdout == 'running'
