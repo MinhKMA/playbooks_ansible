@@ -1,8 +1,6 @@
 ---
 - name: Install nginx
   hosts: client
-  become: true
-
   tasks:
     - name: Disable SELinux
       selinux:
@@ -25,23 +23,23 @@
       yum:
         name: epel-release
         state: present
-      when: status.stdout == 'running' and ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
 
     - name: Install nginx
       yum:
         name: nginx
         state: present
-      when: status.stdout == 'running' and ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
 
     - name: Insert Index Page
       template:
         src: index.html
         dest: /usr/share/nginx/html/index.html
-      when: status.stdout == 'running' and ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
 
     - name: Start NGiNX
       service:
         name: nginx
         state: started
         enabled: yes
-      when: status.stdout == 'running' and ansible_distribution == "CentOS" and ansible_distribution_version == '7'
+      when: ansible_distribution == "CentOS" and ansible_distribution_version == '7'
